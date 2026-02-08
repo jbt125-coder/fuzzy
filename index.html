@@ -3,129 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FuzzySongs Pro v7</title>
+    <title>Fuzzy Lyrics Pro</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #0a0a0a; color: #e0e0e0; margin: 0; padding: 20px; padding-bottom: 100px; }
-        .container { max-width: 500px; margin: auto; }
-        h1 { color: #00ff88; text-align: center; margin-bottom: 25px; letter-spacing: -1px; }
+        :root { --neon: #00ff88; --bg: #0a0a0a; --card: #1a1a1a; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: #e0e0e0; margin: 0; padding: 0; overflow-x: hidden; }
         
-        /* Input Card */
-        .card { background: #1a1a1a; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)), 
+                        url('https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&q=80&w=1000');
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 3000; text-align: center; transition: 0.5s;
+        }
+        #splash-screen h1 { 
+            font-size: 3rem; color: var(--neon); text-transform: uppercase; 
+            letter-spacing: -2px; margin: 0; text-shadow: 0 0 20px var(--neon);
+        }
+        .tagline { font-style: italic; color: #888; margin-bottom: 30px; }
+
+        /* General Layout */
+        .container { max-width: 500px; margin: auto; padding: 20px; padding-bottom: 100px; display: none; }
+        h1.lib-title { color: var(--neon); text-align: center; margin-bottom: 25px; }
+        
+        .card { background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
         label { display: block; margin: 10px 0 5px; font-size: 0.8rem; color: #888; text-transform: uppercase; }
         input, textarea { width: 100%; padding: 12px; background: #252525; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
-        textarea { font-family: 'Courier New', monospace; }
         
-        .btn { background: #00ff88; color: black; border: none; padding: 15px; width: 100%; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .btn:active { transform: scale(0.98); }
+        .btn { background: var(--neon); color: black; border: none; padding: 15px; width: 100%; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .start-btn { width: 200px; font-size: 1.2rem; box-shadow: 0 0 15px var(--neon); }
 
-        /* Song List */
-        .song-item { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-top: 12px; display: flex; flex-direction: column; gap: 12px; border-left: 4px solid #00ff88; border: 1px solid #333; }
-        .song-info { display: flex; justify-content: space-between; align-items: center; }
-        .song-info strong { font-size: 1.1rem; color: #fff; }
-        .song-info span { color: #666; font-size: 0.9rem; }
+        .song-item { background: var(--card); padding: 15px; border-radius: 12px; margin-top: 12px; border: 1px solid #333; border-left: 4px solid var(--neon); }
+        .action-btns { display: flex; gap: 8px; margin-top: 10px; }
+        .action-btns button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
         
-        .action-btns { display: flex; gap: 8px; }
-        .action-btns button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
-        .play-btn { background: #00ff88; color: black; }
-        .edit-btn { background: #444; color: white; }
-        .del-btn { background: #222; color: #ff4444; border: 1px solid #333; }
-
-        /* Modal */
-        #delete-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-box { background: #2a2a2a; padding: 30px; border-radius: 15px; text-align: center; border: 1px solid #444; width: 80%; max-width: 300px; }
-        .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
-        .yes-btn { background: #ff4444; color: white; flex: 1; padding: 12px; border-radius: 8px; font-weight: bold; border: none; }
-        .no-btn { background: #555; color: white; flex: 1; padding: 12px; border-radius: 8px; border: none; }
-
-        /* Performance Overlay */
+        /* Scroller */
         #scroller-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 1000; overflow: hidden; }
-        #scroll-content { white-space: pre; font-family: 'Courier New', monospace; font-size: 26px; line-height: 2.2; padding: 75vh 20px; position: absolute; width: 100%; color: #fff; pointer-events: none; }
+        #scroll-content { white-space: pre; font-family: 'Courier New', monospace; font-size: 26px; line-height: 2.2; padding: 75vh 20px; position: absolute; width: 100%; color: #fff; pointer-events: none; transition: transform 0.1s linear; }
         
-        .top-nav { position: fixed; top: 10px; left: 0; width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 1005; padding: 5px; }
-        .nav-btn { padding: 10px 18px; border-radius: 20px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; }
+        .top-nav { position: fixed; top: 10px; left: 0; width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 1005; }
+        .nav-btn { padding: 10px 18px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; }
 
-        .speed-btn { position: fixed; top: 70px; width: 75px; height: 50px; border: none; border-radius: 12px; font-weight: bold; z-index: 1002; }
-        .slower { left: 15px; background: #ffea00; color: black; }
-        .faster { right: 15px; background: #007aff; color: white; }
-        .speed-label { position: fixed; top: 125px; right: 20px; color: #007aff; font-weight: bold; font-size: 14px; z-index: 1002; width: 75px; text-align: center; }
+        #pause-menu { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(30,30,30,0.98); padding: 25px; border-radius: 20px; border: 2px solid var(--neon); z-index: 2000; width: 260px; text-align: center; }
+        .pause-opt { background: #444; color: white; border: none; padding: 15px; margin: 8px 0; width: 100%; border-radius: 10px; font-weight: bold; }
         
-        .voice-toggle { left: 50%; transform: translateX(-50%); top: 70px; background: #ff4444; color: white; width: 110px; font-size: 10px; }
-        .voice-on { background: #00ff88; color: black; border: 2px solid white; box-shadow: 0 0 15px #00ff88; }
-
-        .wave-container { position: fixed; top: 125px; left: 50%; transform: translateX(-50%); display: none; align-items: center; gap: 3px; height: 20px; z-index: 1003; }
-        .bar { width: 3px; height: 8px; background: #00ff88; border-radius: 2px; animation: vibrate 0.5s infinite ease-in-out; }
-        @keyframes vibrate { 0%, 100% { height: 8px; } 50% { height: 20px; } }
-        
-        .countdown { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; color: #00ff88; font-weight: bold; pointer-events: none; z-index: 1002; }
+        .countdown-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; color: rgba(0, 255, 136, 0.4); font-weight: bold; pointer-events: none; z-index: 1001; text-align: center; width: 100%; }
+        .speed-label { position: fixed; top: 70px; right: 20px; color: #007aff; font-weight: bold; z-index: 1002; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 5px; }
+        .mic-indicator { position: fixed; top: 70px; left: 20px; width: 12px; height: 12px; border-radius: 50%; background: #555; z-index: 1002; border: 2px solid white; }
+        .mic-on { background: var(--neon); box-shadow: 0 0 10px var(--neon); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>FuzzySongs</h1>
+<div id="splash-screen">
+    <h1>Fuzzy Lyrics</h1>
+    <p class="tagline">Your Setlist. Your Speed. Your Voice.</p>
+    <button class="btn start-btn" onclick="enterApp()">START APP</button>
+</div>
+
+<div class="container" id="library-view">
+    <h1 class="lib-title">Song Library</h1>
     <div class="card">
-        <label>Title</label>
-        <input type="text" id="songTitle" placeholder="e.g. Doin' It">
-        <label>Length (Seconds)</label>
-        <input type="number" id="songLength" placeholder="e.g. 180">
+        <label>Song Title</label>
+        <input type="text" id="songTitle" placeholder="Enter Song Title Here">
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1;"><label>Seconds</label><input type="number" id="songLength" placeholder="180"></div>
+            <div style="flex:1;"><label>Auto-Pause (s)</label><input type="number" id="songPause" value="5"></div>
+        </div>
         <label>Lyrics & Chords</label>
-        <textarea id="songText" rows="8" placeholder="Chords above lyrics..."></textarea>
+        <textarea id="songText" rows="8" placeholder="Type or paste lyrics here..."></textarea>
         <button id="mainSaveBtn" class="btn" onclick="saveSong()">SAVE TO LIBRARY</button>
     </div>
     <div id="songList"></div>
 </div>
 
-<div id="delete-modal">
-    <div class="modal-box">
-        <h3 style="color: white; margin-top:0;">Warning: Delete Song</h3>
-        <p style="color: #bbb;">Are you sure?</p>
-        <div class="modal-btns">
-            <button class="yes-btn" onclick="confirmDelete()">YES</button>
-            <button class="no-btn" onclick="closeModal()">NO</button>
-        </div>
-    </div>
-</div>
-
 <div id="scroller-overlay">
+    <div class="mic-indicator" id="micStatus"></div>
     <div class="top-nav">
-        <button class="nav-btn" style="background: #00ff88; color: black;" onclick="restartSong()">RESTART</button>
-        <button id="pauseBtn" class="nav-btn" style="background: white; color: black;" onclick="togglePause()">PAUSE</button>
-        <button class="nav-btn" style="background: #444; color: white;" onclick="stopScroll()">EXIT</button>
+        <button class="nav-btn" style="background: var(--neon);" onclick="restartSong()">RESTART</button>
+        <button id="pauseBtn" class="nav-btn" style="background: white;" onclick="triggerPauseUI()">PAUSE</button>
+        <button class="nav-btn" style="background: #444; color:white;" onclick="stopScroll()">EXIT</button>
     </div>
-    
-    <button class="speed-btn slower" onclick="adjustSpeed(1.1)">SLOWER</button>
-    <button id="voiceBtn" class="speed-btn voice-toggle" onclick="toggleVoice()">VOICE LOCK</button>
-    <button class="speed-btn faster" onclick="adjustSpeed(0.9)">FASTER</button>
-    
     <div id="speedDisplay" class="speed-label">Speed: 0%</div>
-    
-    <div id="wave" class="wave-container">
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-    </div>
-    
-    <div id="countdown-display" class="countdown"></div>
+    <div id="countdown-display" class="countdown-overlay"></div>
     <div id="scroll-content"></div>
+
+    <div id="pause-menu">
+        <h3 style="margin:0 0 15px 0; color: white;">PAUSED</h3>
+        <button class="pause-opt" style="background:var(--neon); color:black;" onclick="resumeImmediately()">RESUME NOW</button>
+        <button class="pause-opt" onclick="startTimedPause(5)">+5 SECONDS</button>
+        <button class="pause-opt" onclick="startTimedPause(10)">+10 SECONDS</button>
+        <button class="pause-opt" onclick="stayPaused()">MANUAL PAUSE</button>
+    </div>
 </div>
 
 <script>
     let songs = JSON.parse(localStorage.getItem('fuzzy_index')) || [];
-    let editIndex = null; 
-    let currentDuration, originalDuration, speedPercent = 0, startTime = 0, pausedAtProgress = 0, isPaused = false, deleteIndex = null;
-    let recognition, voiceActive = false;
+    let editIndex = null, currentSongIndex = 0, currentSongData = null;
+    let originalDuration, currentDuration, speedPercent = 0;
+    let startTime = 0, pausedAtProgress = 0, isPaused = false, pauseTimer = null;
+    let recognition;
 
-    // --- LIBRARY FUNCTIONS ---
+    function enterApp() {
+        document.getElementById('splash-screen').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('splash-screen').style.display = 'none';
+            document.getElementById('library-view').style.display = 'block';
+        }, 500);
+    }
 
+    // --- LIBRARY ---
     function renderList() {
         const listDiv = document.getElementById('songList');
         listDiv.innerHTML = songs.length ? '' : '<p style="text-align:center; color:#555;">Library Empty</p>';
         songs.forEach((song, index) => {
             listDiv.innerHTML += `
                 <div class="song-item">
-                    <div class="song-info"><strong>${song.title}</strong><span>${song.length}s</span></div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>${song.title}</strong>
+                        <span style="font-size:12px; color:#888;">${song.length}s | P:${song.pause}s</span>
+                    </div>
                     <div class="action-btns">
-                        <button class="play-btn" onclick="playSong(${index})">PLAY</button>
-                        <button class="edit-btn" onclick="editSong(${index})">EDIT</button>
-                        <button class="del-btn" onclick="askDelete(${index})">DEL</button>
+                        <button style="background:var(--neon)" onclick="playSong(${index})">PLAY</button>
+                        <button style="background:#444; color:white" onclick="editSong(${index})">EDIT</button>
+                        <button style="background:#222; color:#ff4444;" onclick="deleteSong(${index})">DEL</button>
                     </div>
                 </div>`;
         });
@@ -134,140 +136,175 @@
     function saveSong() {
         const title = document.getElementById('songTitle').value;
         const length = document.getElementById('songLength').value;
+        const pause = document.getElementById('songPause').value || 5;
         const text = document.getElementById('songText').value;
-
         if(!title || !text) return alert("Title and Lyrics required!");
 
-        if (editIndex !== null) {
-            // Overwrite existing
-            songs[editIndex] = { title, length, text };
-            editIndex = null;
-            const btn = document.getElementById('mainSaveBtn');
-            btn.innerText = "SAVE TO LIBRARY";
-            btn.style.background = "#00ff88";
-            btn.style.color = "black";
-        } else {
-            // Add new
-            songs.push({ title, length, text });
-        }
-
+        const data = { title, length, text, pause };
+        if (editIndex !== null) songs[editIndex] = data; else songs.push(data);
         localStorage.setItem('fuzzy_index', JSON.stringify(songs));
+        editIndex = null;
         renderList();
         clearForm();
-    }
-
-    function editSong(index) {
-        const song = songs[index];
-        document.getElementById('songTitle').value = song.title;
-        document.getElementById('songLength').value = song.length;
-        document.getElementById('songText').value = song.text;
-        
-        editIndex = index;
-        const btn = document.getElementById('mainSaveBtn');
-        btn.innerText = "UPDATE & OVERWRITE";
-        btn.style.background = "#007aff";
-        btn.style.color = "white";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function clearForm() {
         document.getElementById('songTitle').value = '';
         document.getElementById('songLength').value = '';
+        document.getElementById('songPause').value = '5';
         document.getElementById('songText').value = '';
-        editIndex = null;
+        document.getElementById('mainSaveBtn').innerText = "SAVE TO LIBRARY";
     }
 
-    function askDelete(index) { deleteIndex = index; document.getElementById('delete-modal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('delete-modal').style.display = 'none'; }
-    function confirmDelete() { 
-        songs.splice(deleteIndex, 1); 
-        localStorage.setItem('fuzzy_index', JSON.stringify(songs)); 
-        renderList(); 
-        closeModal(); 
+    function editSong(index) {
+        const s = songs[index];
+        document.getElementById('songTitle').value = s.title;
+        document.getElementById('songLength').value = s.length;
+        document.getElementById('songPause').value = s.pause;
+        document.getElementById('songText').value = s.text;
+        editIndex = index;
+        document.getElementById('mainSaveBtn').innerText = "UPDATE SONG";
+        window.scrollTo({top: 0, behavior: 'smooth'});
     }
 
-    // --- PERFORMANCE & VOICE FUNCTIONS ---
-
-    function initSpeech() {
-        if (!('webkitSpeechRecognition' in window)) return false;
-        recognition = new webkitSpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-        recognition.onresult = (e) => {
-            const res = e.results[e.results.length - 1][0].transcript.toLowerCase();
-            if (res.includes("faster") || res.includes("speed it up")) adjustSpeed(0.9);
-            if (res.includes("slower") || res.includes("slow it down")) adjustSpeed(1.1);
-            if (res.includes("pause") && !isPaused) togglePause();
-            if ((res.includes("resume") || res.includes("go")) && isPaused) togglePause();
-        };
-        return true;
-    }
-
-    async function toggleVoice() {
-        if (!recognition) initSpeech();
-        voiceActive = !voiceActive;
-        const btn = document.getElementById('voiceBtn'), wave = document.getElementById('wave');
-        if (voiceActive) {
-            try { 
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-                btn.classList.add('voice-on'); btn.innerText = "LISTENING..."; wave.style.display = 'flex';
-                recognition.start();
-            } catch { alert("Microphone access denied."); voiceActive = false; }
-        } else { 
-            btn.classList.remove('voice-on'); btn.innerText = "VOICE LOCK"; wave.style.display = 'none';
-            recognition.stop(); 
+    function deleteSong(index) {
+        if(confirm("Delete this song?")) {
+            songs.splice(index, 1);
+            localStorage.setItem('fuzzy_index', JSON.stringify(songs));
+            renderList();
         }
     }
 
+    // --- PERFORMANCE ---
     function playSong(index) {
-        const song = songs[index];
-        originalDuration = parseInt(song.length) || 180;
-        currentDuration = originalDuration;
-        speedPercent = 0;
-        updateSpeedUI();
-        document.getElementById('scroll-content').innerText = song.text + "\n\n--- FINISH ---";
+        if (window.AudioContext) new AudioContext().resume(); 
+        currentSongIndex = index;
+        currentSongData = songs[index];
+        originalDuration = parseInt(currentSongData.length) || 180;
+        document.getElementById('scroll-content').innerText = currentSongData.text + "\n\n--- FINISH ---";
         document.getElementById('scroller-overlay').style.display = 'block';
+        if(!recognition) initSpeech();
         restartSong();
-    }
-
-    function togglePause() {
-        const btn = document.getElementById('pauseBtn');
-        if(!isPaused) {
-            cancelAnimationFrame(window.scrollRef);
-            pausedAtProgress += (performance.now() - startTime) / 1000 / currentDuration;
-            isPaused = true;
-            btn.innerText = "RESUME"; btn.style.background = "#00ff88";
-        } else {
-            isPaused = false;
-            btn.innerText = "PAUSE"; btn.style.background = "white";
-            startTime = performance.now();
-            startScrolling();
-        }
     }
 
     function restartSong() {
         cancelAnimationFrame(window.scrollRef);
-        isPaused = false; speedPercent = 0; updateSpeedUI();
-        document.getElementById('pauseBtn').innerText = "PAUSE";
+        clearTimeout(pauseTimer);
+        isPaused = false;
+        document.getElementById('pause-menu').style.display = 'none';
         document.getElementById('scroll-content').style.transform = 'translateY(0)';
-        pausedAtProgress = 0; currentDuration = originalDuration;
-        let count = 10;
+        pausedAtProgress = 0;
+        currentDuration = originalDuration * Math.pow(1.1, -speedPercent/10); 
+        startIntroCount(10);
+    }
+
+    function startIntroCount(seconds) {
+        let count = seconds;
         const cd = document.getElementById('countdown-display');
-        const intro = setInterval(() => { 
-            count--; cd.innerText = count > 0 ? count : ""; 
-            if(count <= 0) { clearInterval(intro); startTime = performance.now(); startScrolling(); } 
+        cd.style.color = "rgba(0, 255, 136, 0.4)";
+        const intro = setInterval(() => {
+            cd.innerText = count > 0 ? count : "";
+            if(count <= 0) { 
+                clearInterval(intro); 
+                startTime = performance.now(); 
+                startScrolling(); 
+            }
+            count--;
         }, 1000);
     }
 
     function startScrolling() {
-        const content = document.getElementById('scroll-content'), totalHeight = content.scrollHeight;
+        const content = document.getElementById('scroll-content');
+        const totalHeight = content.scrollHeight;
+        const viewportHeight = window.innerHeight;
         function step(now) {
+            if(isPaused) return;
             const progress = Math.min(pausedAtProgress + ((now - startTime) / 1000 / currentDuration), 1);
-            content.style.transform = `translateY(-${progress * totalHeight}px)`;
-            if(progress < 1 && !isPaused) window.scrollRef = requestAnimationFrame(step);
+            content.style.transform = `translateY(-${progress * (totalHeight - viewportHeight / 2)}px)`;
+            if(progress < 1) window.scrollRef = requestAnimationFrame(step);
+            else handleSongEnd();
         }
         window.scrollRef = requestAnimationFrame(step);
+    }
+
+    function handleSongEnd() {
+        cancelAnimationFrame(window.scrollRef);
+        if (songs.length > 1) {
+            let count = 10;
+            const cd = document.getElementById('countdown-display');
+            cd.style.color = "#007aff";
+            const outro = setInterval(() => {
+                cd.innerText = "NEXT IN: " + count;
+                count--;
+                if(count < 0) {
+                    clearInterval(outro);
+                    cd.innerText = "";
+                    currentSongIndex = (currentSongIndex + 1) % songs.length;
+                    playSong(currentSongIndex);
+                }
+            }, 1000);
+        } else {
+            document.getElementById('countdown-display').innerText = "FINISH";
+        }
+    }
+
+    function triggerPauseUI() {
+        if(isPaused) return;
+        isPaused = true;
+        cancelAnimationFrame(window.scrollRef);
+        pausedAtProgress += (performance.now() - startTime) / 1000 / currentDuration;
+        document.getElementById('pause-menu').style.display = 'block';
+        if(currentSongData.pause > 0) startTimedPause(currentSongData.pause);
+    }
+
+    function startTimedPause(secs) {
+        clearTimeout(pauseTimer);
+        document.getElementById('pause-menu').style.display = 'none';
+        let count = secs;
+        const cd = document.getElementById('countdown-display');
+        cd.style.color = "rgba(0, 255, 136, 0.2)";
+        const timerFunc = () => {
+            cd.innerText = count > 0 ? count : "";
+            if(count <= 0) resumeImmediately();
+            else { count--; pauseTimer = setTimeout(timerFunc, 1000); }
+        };
+        timerFunc();
+    }
+
+    function stayPaused() {
+        clearTimeout(pauseTimer);
+        document.getElementById('pause-menu').style.display = 'none';
+        document.getElementById('countdown-display').innerText = "||";
+    }
+
+    function resumeImmediately() {
+        clearTimeout(pauseTimer);
+        document.getElementById('pause-menu').style.display = 'none';
+        document.getElementById('countdown-display').innerText = "";
+        isPaused = false;
+        startTime = performance.now();
+        startScrolling();
+    }
+
+    function initSpeech() {
+        const sr = window.webkitSpeechRecognition || window.SpeechRecognition;
+        if (!sr) return;
+        recognition = new sr();
+        recognition.continuous = false; 
+        recognition.onstart = () => document.getElementById('micStatus').classList.add('mic-on');
+        recognition.onend = () => {
+            document.getElementById('micStatus').classList.remove('mic-on');
+            if (document.getElementById('scroller-overlay').style.display === 'block') recognition.start();
+        };
+        recognition.onresult = (e) => {
+            const res = e.results[e.results.length - 1][0].transcript.toLowerCase();
+            if (res.includes("restart")) restartSong();
+            if (res.includes("pause")) triggerPauseUI();
+            if (res.includes("play") || res.includes("go") || res.includes("resume")) resumeImmediately();
+            if (res.includes("faster")) adjustSpeed(0.9);
+            if (res.includes("slower")) adjustSpeed(1.1);
+        };
+        recognition.start();
     }
 
     function adjustSpeed(factor) {
@@ -276,18 +313,12 @@
         pausedAtProgress += (performance.now() - startTime) / 1000 / currentDuration;
         currentDuration *= factor;
         speedPercent += (factor < 1 ? 10 : -10);
-        updateSpeedUI();
+        document.getElementById('speedDisplay').innerText = `Speed: ${speedPercent}%`;
         startTime = performance.now();
         startScrolling();
     }
 
-    function updateSpeedUI() { document.getElementById('speedDisplay').innerText = `Speed: ${speedPercent}%`; }
-    function stopScroll() { 
-        cancelAnimationFrame(window.scrollRef); 
-        if(voiceActive) toggleVoice(); 
-        document.getElementById('scroller-overlay').style.display = 'none'; 
-    }
-
+    function stopScroll() { location.reload(); }
     renderList();
 </script>
 </body>
