@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FuzzySongs Pro v7</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #0a0a0a; color: #e0e0e0; margin: 0; padding: 20px; padding-bottom: 100px; }
+        .container { max-width: 500px; margin: auto; }
+        h1 { color: #00ff88; text-align: center; margin-bottom: 25px; letter-spacing: -1px; }
+        
+        /* Input Card */
+        .card { background: #1a1a1a; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
+        label { display: block; margin: 10px 0 5px; font-size: 0.8rem; color: #888; text-transform: uppercase; }
+        input, textarea { width: 100%; padding: 12px; background: #252525; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
+        textarea { font-family: 'Courier New', monospace; }
+        
+        .btn { background: #00ff88; color: black; border: none; padding: 15px; width: 100%; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+
+        /* Song List */
+        .song-item { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-top: 12px; display: flex; flex-direction: column; gap: 12px; border-left: 4px solid #00ff88; border: 1px solid #333; }
+        .song-info { display: flex; justify-content: space-between; align-items: center; }
+        .song-info strong { font-size: 1.1rem; color: #fff; }
+        .song-info span { color: #666; font-size: 0.9rem; }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .action-btns button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+        .play-btn { background: #00ff88; color: black; }
+        .edit-btn { background: #444; color: white; }
+        .del-btn { background: #222; color: #ff4444; border: 1px solid #333; }
+
+        /* Modal */
+        #delete-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-box { background: #2a2a2a; padding: 30px; border-radius: 15px; text-align: center; border: 1px solid #444; width: 80%; max-width: 300px; }
+        .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .yes-btn { background: #ff4444; color: white; flex: 1; padding: 12px; border-radius: 8px; font-weight: bold; border: none; }
+        .no-btn { background: #555; color: white; flex: 1; padding: 12px; border-radius: 8px; border: none; }
+
+        /* Performance Overlay */
+        #scroller-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 1000; overflow: hidden; }
+        #scroll-content { white-space: pre; font-family: 'Courier New', monospace; font-size: 26px; line-height: 2.2; padding: 75vh 20px; position: absolute; width: 100%; color: #fff; pointer-events: none; }
+        
+        .top-nav { position: fixed; top: 10px; left: 0; width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 1005; padding: 5px; }
+        .nav-btn { padding: 10px 18px; border-radius: 20px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; }
+
+        .speed-btn { position: fixed; top: 70px; width: 75px; height: 50px; border: none; border-radius: 12px; font-weight: bold; z-index: 1002; }
+        .slower { left: 15px; background: #ffea00; color: black; }
+        .faster { right: 15px; background: #007aff; color: white; }
+        .speed-label { position: fixed; top: 125px; right: 20px; color: #007aff; font-weight: bold; font-size: 14px; z-index: 1002; width: 75px; text-align: center; }
+        
+        .voice-toggle { left: 50%; transform: translateX(-50%); top: 70px; background: #ff4444; color: white; width: 110px; font-size: 10px; }
+        .voice-on { background: #00ff88; color: black; border: 2px solid white; box-shadow: 0 0 15px #00ff88; }
+
+        .wave-container { position: fixed; top: 125px; left: 50%; transform: translateX(-50%); display: none; align-items: center; gap: 3px; height: 20px; z-index: 1003; }
+        .bar { width: 3px; height: 8px; background: #00ff88; border-radius: 2px; animation: vibrate 0.5s infinite ease-in-out; }
+        @keyframes vibrate { 0%, 100% { height: 8px; } 50% { height: 20px; } }
+        
+        .countdown { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; color: #00ff88; font-weight: bold; pointer-events: none; z-index: 1002; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>FuzzySongs</h1>
+    <div class="card">
+        <label>Title</label>
+        <input type="text" id="songTitle" placeholder="e.g. Doin' It">
+        <label>Length (Seconds)</label>
+        <input type="number" id="songLength" placeholder="e.g. 180">
+        <label>Lyrics & Chords</label>
+        <textarea id="songText" rows="8" placeholder="Chords above lyrics..."></textarea>
+        <button id="mainSaveBtn" class="btn" onclick="saveSong()">SAVE TO LIBRARY</button>
+    </div>
+    <div id="songList"></div>
+</div>
+
+<div id="delete-modal">
+    <div class="modal-box">
+        <h3 style="color: white; margin-top:0;">Warning: Delete Song</h3>
+        <p style="color: #bbb;">Are you sure?</p>
+        <div class="modal-btns">
+            <button class="yes-btn" onclick="confirmDelete()">YES</button>
+            <button class="no-btn" onclick="closeModal()">NO</button>
+        </div>
+    </div>
+</div>
+
+<div id="scroller-overlay">
+    <div class="top-nav">
+        <button class="nav-btn" style="background: #00ff88; color: black;" onclick="restartSong()">RESTART</button>
+        <button id="pauseBtn" class="nav-btn" style="background: white; color: black;" onclick="togglePause()">PAUSE</button>
+        <button class="nav-btn" style="background: #444; color: white;" onclick="stopScroll()">EXIT</button>
+    </div>
+    
+    <button class="speed-btn slower" onclick="adjustSpeed(1.1)">SLOWER</button>
+    <button id="voiceBtn" class="speed-btn voice-toggle" onclick="toggleVoice()">VOICE LOCK</button>
+    <button class="speed-btn faster" onclick="adjustSpeed(0.9)">FASTER</button>
+    
+    <div id="speedDisplay" class="speed-label">Speed: 0%</div>
+    
+    <div id="wave" class="wave-container">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    </div>
+    
+    <div id="countdown-display" class="countdown"></div>
+    <div id="scroll-content"></div>
+</div>
+
+<script>
+    let songs = JSON.parse(localStorage.getItem('fuzzy_index')) || [];
+    let editIndex = null; 
+    let currentDuration, originalDuration, speedPercent = 0, startTime = 0, pausedAtProgress = 0, isPaused = false, deleteIndex = null;
+    let recognition, voiceActive = false;
+
+    // --- LIBRARY FUNCTIONS ---
+
+    function renderList() {
+        const listDiv = document.getElementById('songList');
+        listDiv.innerHTML = songs.length ? '' : '<p style="text-align:center; color:#555;">Library Empty</p>';
+        songs.forEach((song, index) => {
+            listDiv.innerHTML += `
+                <div class="song-item">
+                    <div class="song-info"><strong>${song.title}</strong><span>${song.length}s</span></div>
+                    <div class="action-btns">
+                        <button class="play-btn" onclick="playSong(${index})">PLAY</button>
+                        <button class="edit-btn" onclick="editSong(${index})">EDIT</button>
+                        <button class="del-btn" onclick="askDelete(${index})">DEL</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function saveSong() {
+        const title = document.getElementById('songTitle').value;
+        const length = document.getElementById('songLength').value;
+        const text = document.getElementById('songText').value;
+
+        if(!title || !text) return alert("Title and Lyrics required!");
+
+        if (editIndex !== null) {
+            // Overwrite existing
+            songs[editIndex] = { title, length, text };
+            editIndex = null;
+            const btn = document.getElementById('mainSaveBtn');
+            btn.innerText = "SAVE TO LIBRARY";
+            btn.style.background = "#00ff88";
+            btn.style.color = "black";
+        } else {
+            // Add new
+            songs.push({ title, length, text });
+        }
+
+        localStorage.setItem('fuzzy_index', JSON.stringify(songs));
+        renderList();
+        clearForm();
+    }
+
+    function editSong(index) {
+        const song = songs[index];
+        document.getElementById('songTitle').value = song.title;
+        document.getElementById('songLength').value = song.length;
+        document.getElementById('songText').value = song.text;
+        
+        editIndex = index;
+        const btn = document.getElementById('mainSaveBtn');
+        btn.innerText = "UPDATE & OVERWRITE";
+        btn.style.background = "#007aff";
+        btn.style.color = "white";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function clearForm() {
+        document.getElementById('songTitle').value = '';
+        document.getElementById('songLength').value = '';
+        document.getElementById('songText').value = '';
+        editIndex = null;
+    }
+
+    function askDelete(index) { deleteIndex = index; document.getElementById('delete-modal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('delete-modal').style.display = 'none'; }
+    function confirmDelete() { 
+        songs.splice(deleteIndex, 1); 
+        localStorage.setItem('fuzzy_index', JSON.stringify(songs)); 
+        renderList(); 
+        closeModal(); 
+    }
+
+    // --- PERFORMANCE & VOICE FUNCTIONS ---
+
+    function initSpeech() {
+        if (!('webkitSpeechRecognition' in window)) return false;
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+        recognition.onresult = (e) => {
+            const res = e.results[e.results.length - 1][0].transcript.toLowerCase();
+            if (res.includes("faster") || res.includes("speed it up")) adjustSpeed(0.9);
+            if (res.includes("slower") || res.includes("slow it down")) adjustSpeed(1.1);
+            if (res.includes("pause") && !isPaused) togglePause();
+            if ((res.includes("resume") || res.includes("go")) && isPaused) togglePause();
+        };
+        return true;
+    }
+
+    async function toggleVoice() {
+        if (!recognition) initSpeech();
+        voiceActive = !voiceActive;
+        const btn = document.getElementById('voiceBtn'), wave = document.getElementById('wave');
+        if (voiceActive) {
+            try { 
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                btn.classList.add('voice-on'); btn.innerText = "LISTENING..."; wave.style.display = 'flex';
+                recognition.start();
+            } catch { alert("Microphone access denied."); voiceActive = false; }
+        } else { 
+            btn.classList.remove('voice-on'); btn.innerText = "VOICE LOCK"; wave.style.display = 'none';
+            recognition.stop(); 
+        }
+    }
+
+    function playSong(index) {
+        const song = songs[index];
+        originalDuration = parseInt(song.length) || 180;
+        currentDuration = originalDuration;
+        speedPercent = 0;
+        updateSpeedUI();
+        document.getElementById('scroll-content').innerText = song.text + "\n\n--- FINISH ---";
+        document.getElementById('scroller-overlay').style.display = 'block';
+        restartSong();
+    }
+
+    function togglePause() {
+        const btn = document.getElementById('pauseBtn');
+        if(!isPaused) {
+            cancelAnimationFrame(window.scrollRef);
+            pausedAtProgress += (performance.now() - startTime) / 1000 / currentDuration;
+            isPaused = true;
+            btn.innerText = "RESUME"; btn.style.background = "#00ff88";
+        } else {
+            isPaused = false;
+            btn.innerText = "PAUSE"; btn.style.background = "white";
+            startTime = performance.now();
+            startScrolling();
+        }
+    }
+
+    function restartSong() {
+        cancelAnimationFrame(window.scrollRef);
+        isPaused = false; speedPercent = 0; updateSpeedUI();
+        document.getElementById('pauseBtn').innerText = "PAUSE";
+        document.getElementById('scroll-content').style.transform = 'translateY(0)';
+        pausedAtProgress = 0; currentDuration = originalDuration;
+        let count = 10;
+        const cd = document.getElementById('countdown-display');
+        const intro = setInterval(() => { 
+            count--; cd.innerText = count > 0 ? count : ""; 
+            if(count <= 0) { clearInterval(intro); startTime = performance.now(); startScrolling(); } 
+        }, 1000);
+    }
+
+    function startScrolling() {
+        const content = document.getElementById('scroll-content'), totalHeight = content.scrollHeight;
+        function step(now) {
+            const progress = Math.min(pausedAtProgress + ((now - startTime) / 1000 / currentDuration), 1);
+            content.style.transform = `translateY(-${progress * totalHeight}px)`;
+            if(progress < 1 && !isPaused) window.scrollRef = requestAnimationFrame(step);
+        }
+        window.scrollRef = requestAnimationFrame(step);
+    }
+
+    function adjustSpeed(factor) {
+        if(isPaused) return;
+        cancelAnimationFrame(window.scrollRef);
+        pausedAtProgress += (performance.now() - startTime) / 1000 / currentDuration;
+        currentDuration *= factor;
+        speedPercent += (factor < 1 ? 10 : -10);
+        updateSpeedUI();
+        startTime = performance.now();
+        startScrolling();
+    }
+
+    function updateSpeedUI() { document.getElementById('speedDisplay').innerText = `Speed: ${speedPercent}%`; }
+    function stopScroll() { 
+        cancelAnimationFrame(window.scrollRef); 
+        if(voiceActive) toggleVoice(); 
+        document.getElementById('scroller-overlay').style.display = 'none'; 
+    }
+
+    renderList();
+</script>
+</body>
+</html>
