@@ -5,34 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fuzzy Lyrics Pro</title>
     <style>
-        :root { --neon: #00ff88; --blue: #00d4ff; --bg: #0a0a0a; --card: #1a1a1a; }
+        :root { --neon: #00ff88; --blue: #00d4ff; --pink: #ff00ff; --bg: #0a0a0a; --card: #1a1a1a; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: #e0e0e0; margin: 0; padding: 0; overflow-x: hidden; }
         
-        /* Splash Screen with Neon Rocker Image */
+        /* Splash Screen with Neon Fallback */
         #splash-screen {
             position: fixed; top:0; left:0; width:100%; height:100%;
-            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.8)), 
-                        url('http://googleusercontent.com/generated_image_content/0');
-            background-size: cover; background-position: center;
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.9)), 
+                        url('http://googleusercontent.com/generated_image_content/0.png');
+            background-size: cover; background-position: center; background-color: #000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 3000; text-align: center; transition: opacity 0.8s ease, visibility 0.8s;
-            padding-bottom: 80px;
         }
         #splash-screen.hidden { opacity: 0; visibility: hidden; }
 
-        /* Slow Glowing Button Animation */
+        /* Bouncing Neon Text Fallback */
+        .fallback-text {
+            position: absolute; width: 100%; top: 30%;
+            font-size: 4rem; font-weight: 900; letter-spacing: -2px;
+            text-transform: uppercase; pointer-events: none;
+            z-index: -1; animation: neonBounce 6s infinite ease-in-out;
+        }
+
+        @keyframes neonBounce {
+            0% { transform: translate(0, 0) rotate(-2deg); color: var(--neon); text-shadow: 0 0 20px var(--neon); }
+            33% { transform: translate(10px, -20px) rotate(2deg); color: var(--blue); text-shadow: 0 0 20px var(--blue); }
+            66% { transform: translate(-10px, 10px) rotate(-1deg); color: var(--pink); text-shadow: 0 0 20px var(--pink); }
+            100% { transform: translate(0, 0) rotate(-2deg); color: var(--neon); text-shadow: 0 0 20px var(--neon); }
+        }
+
+        /* Slow Glowing Button */
         @keyframes slowGlow {
-            0% { box-shadow: 0 0 10px var(--neon); transform: scale(1); }
-            50% { box-shadow: 0 0 30px var(--blue); transform: scale(1.03); }
-            100% { box-shadow: 0 0 10px var(--neon); transform: scale(1); }
+            0% { box-shadow: 0 0 15px var(--neon); transform: scale(1); }
+            50% { box-shadow: 0 0 35px var(--blue); transform: scale(1.05); }
+            100% { box-shadow: 0 0 15px var(--neon); transform: scale(1); }
         }
 
         .start-btn { 
             background: var(--neon); color: black; border: none; 
-            padding: 18px 40px; font-weight: bold; border-radius: 50px; 
-            cursor: pointer; font-size: 1.4rem; letter-spacing: 1px;
+            padding: 20px 50px; font-weight: bold; border-radius: 50px; 
+            cursor: pointer; font-size: 1.5rem; letter-spacing: 2px;
             animation: slowGlow 3s infinite ease-in-out;
-            text-transform: uppercase;
+            text-transform: uppercase; margin-top: 150px;
         }
 
         /* Library Layout */
@@ -50,24 +64,25 @@
         /* Scroller Overlay */
         #scroller-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 1000; overflow: hidden; }
         #scroll-content { white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 28px; line-height: 2.3; padding: 55vh 20px 85vh 20px; position: absolute; width: 100%; color: #fff; pointer-events: none; }
-        .focus-zone { position: fixed; top: 50%; left: 0; width: 100%; height: 70px; transform: translateY(-50%); background: rgba(0, 255, 136, 0.07); border-top: 1px solid rgba(0, 255, 136, 0.2); border-bottom: 1px solid rgba(0, 255, 136, 0.2); pointer-events: none; z-index: 999; }
+        .focus-zone { position: fixed; top: 50%; left: 0; width: 100%; height: 75px; transform: translateY(-50%); background: rgba(0, 255, 136, 0.08); border-top: 1px solid rgba(0, 255, 136, 0.3); border-bottom: 1px solid rgba(0, 255, 136, 0.3); pointer-events: none; z-index: 999; }
 
-        .top-nav { position: fixed; top: 10px; left: 0; width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 1005; }
-        .nav-btn { padding: 10px 18px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .top-nav { position: fixed; top: 10px; left: 0; width: 100%; display: flex; justify-content: center; gap: 5px; z-index: 1005; flex-wrap: wrap; }
+        .nav-btn { padding: 10px 14px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-size: 11px; }
 
-        /* Pause Menu - High position for guitarist visibility */
-        #pause-menu { display: none; position: fixed; top: 25%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.98); padding: 25px; border-radius: 20px; border: 2px solid var(--neon); z-index: 2000; width: 280px; text-align: center; box-shadow: 0 0 40px black; }
+        /* Pause Menu */
+        #pause-menu { display: none; position: fixed; top: 25%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.98); padding: 25px; border-radius: 20px; border: 2px solid var(--neon); z-index: 2000; width: 280px; text-align: center; box-shadow: 0 0 50px black; }
         .pause-opt { background: #333; color: white; border: none; padding: 12px; margin: 6px 0; width: 100%; border-radius: 10px; font-weight: bold; }
         
         .countdown-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 160px; color: rgba(0, 255, 136, 0.4); font-weight: bold; pointer-events: none; z-index: 1001; text-align: center; width: 100%; }
-        .speed-label { position: fixed; top: 70px; right: 20px; color: var(--blue); font-weight: bold; z-index: 1002; background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 5px; }
-        .mic-indicator { position: fixed; top: 70px; left: 20px; width: 12px; height: 12px; border-radius: 50%; background: #444; z-index: 1002; border: 2px solid white; }
-        .mic-on { background: var(--neon); box-shadow: 0 0 10px var(--neon); }
+        .speed-label { position: fixed; top: 85px; right: 20px; color: var(--blue); font-weight: bold; z-index: 1002; background: rgba(0,0,0,0.7); padding: 5px 12px; border-radius: 5px; }
+        .mic-indicator { position: fixed; top: 85px; left: 20px; width: 14px; height: 14px; border-radius: 50%; background: #444; z-index: 1002; border: 2px solid white; }
+        .mic-on { background: var(--neon); box-shadow: 0 0 15px var(--neon); }
     </style>
 </head>
 <body>
 
 <div id="splash-screen">
+    <div class="fallback-text">FUZZY LYRICS</div>
     <button class="start-btn" onclick="enterApp()">START PERFORMANCE</button>
 </div>
 
@@ -90,11 +105,15 @@
 <div id="scroller-overlay">
     <div class="focus-zone"></div>
     <div class="mic-indicator" id="micStatus"></div>
+    
     <div class="top-nav">
         <button class="nav-btn" style="background: var(--neon);" onclick="restartSong()">RESTART</button>
+        <button class="nav-btn" style="background: var(--blue); color: black;" onclick="adjustSpeed(1.1)">SLOWER</button>
+        <button class="nav-btn" style="background: var(--blue); color: black;" onclick="adjustSpeed(0.9)">FASTER</button>
         <button id="pauseBtn" class="nav-btn" style="background: white;" onclick="triggerPauseUI()">PAUSE</button>
         <button class="nav-btn" style="background: #444; color:white;" onclick="stopScroll()">EXIT</button>
     </div>
+
     <div id="speedDisplay" class="speed-label">Speed: 0%</div>
     <div id="countdown-display" class="countdown-overlay"></div>
     <div id="scroll-content"></div>
@@ -124,7 +143,6 @@
         }, 800);
     }
 
-    // --- LIBRARY ---
     function renderList() {
         const listDiv = document.getElementById('songList');
         listDiv.innerHTML = songs.length ? '' : '<p style="text-align:center; color:#555;">No songs found.</p>';
@@ -149,8 +167,7 @@
         const length = document.getElementById('songLength').value;
         const pause = document.getElementById('songPause').value || 5;
         const text = document.getElementById('songText').value;
-        if(!title || !text) return alert("Please fill in Title and Lyrics!");
-
+        if(!title || !text) return alert("Title and Lyrics required!");
         const data = { title, length, text, pause };
         if (editIndex !== null) songs[editIndex] = data; else songs.push(data);
         localStorage.setItem('fuzzy_index', JSON.stringify(songs));
@@ -186,7 +203,6 @@
         }
     }
 
-    // --- SCROLLER ENGINE ---
     function playSong(index) {
         if (window.AudioContext) new AudioContext().resume(); 
         currentSongIndex = index;
@@ -205,7 +221,9 @@
         document.getElementById('pause-menu').style.display = 'none';
         document.getElementById('scroll-content').style.transform = 'translateY(0)';
         pausedAtProgress = 0;
-        currentDuration = originalDuration * Math.pow(1.1, -speedPercent/10); 
+        speedPercent = 0;
+        document.getElementById('speedDisplay').innerText = `Speed: 0%`;
+        currentDuration = originalDuration; 
         startIntroCount(5);
     }
 
@@ -228,22 +246,14 @@
         const content = document.getElementById('scroll-content');
         const totalHeight = content.scrollHeight;
         const viewportHeight = window.innerHeight;
-        
         function step(now) {
             if(isPaused) return;
-            
-            // MATH FIX: Calculate absolute progress to prevent jumping/rewinding
             const elapsed = (now - startTime) / 1000;
             const progressThisSession = elapsed / currentDuration;
             const totalProgress = Math.min(pausedAtProgress + progressThisSession, 1);
-            
             content.style.transform = `translateY(-${totalProgress * (totalHeight - viewportHeight / 2)}px)`;
-            
-            if(totalProgress < 1) {
-                window.scrollRef = requestAnimationFrame(step);
-            } else {
-                handleSongEnd();
-            }
+            if(totalProgress < 1) window.scrollRef = requestAnimationFrame(step);
+            else handleSongEnd();
         }
         window.scrollRef = requestAnimationFrame(step);
     }
@@ -257,12 +267,9 @@
         if(isPaused) return;
         isPaused = true;
         cancelAnimationFrame(window.scrollRef);
-        
-        // Save exact progress before freezing
         pausedAtProgress += (performance.now() - startTime) / 1000 / currentDuration;
-        
         document.getElementById('pause-menu').style.display = 'block';
-        startTimedPause(currentSongData.pause || 5); // Auto-starts hands-free timer
+        startTimedPause(currentSongData.pause || 5);
     }
 
     function startTimedPause(secs) {
@@ -270,15 +277,10 @@
         let count = secs;
         const cd = document.getElementById('countdown-display');
         cd.style.color = "var(--neon)";
-        
         const timerFunc = () => {
             cd.innerText = count > 0 ? count : "";
-            if(count <= 0) {
-                resumeImmediately();
-            } else {
-                count--;
-                pauseTimer = setTimeout(timerFunc, 1000);
-            }
+            if(count <= 0) resumeImmediately();
+            else { count--; pauseTimer = setTimeout(timerFunc, 1000); }
         };
         timerFunc();
     }
@@ -294,11 +296,10 @@
         document.getElementById('pause-menu').style.display = 'none';
         document.getElementById('countdown-display').innerText = "";
         isPaused = false;
-        startTime = performance.now(); // Reset baseline for resume
+        startTime = performance.now();
         startScrolling();
     }
 
-    // --- VOICE CONTROL ---
     function initSpeech() {
         const sr = window.webkitSpeechRecognition || window.SpeechRecognition;
         if (!sr) return;
