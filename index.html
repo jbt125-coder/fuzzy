@@ -26,7 +26,7 @@ body {
 }
 #splash-screen.hidden{opacity:0;visibility:hidden}
 .floating-title{
-  font-size:4.5rem;font-weight:900;text-transform:uppercase;
+  font-size:4.5rem;font-weight:900;text-transform:uppercase; text-align: center;
   animation:neonDrift 5s infinite ease-in-out;
 }
 @keyframes neonDrift{
@@ -45,11 +45,12 @@ body {
 .card{background:var(--card);padding:20px;border-radius:15px;margin-bottom:20px}
 input,textarea{
   width:100%;padding:12px;background:#252525;color:white;
-  border:1px solid #444;border-radius:8px;margin-bottom:10px;
+  border:1px solid #444;border-radius:8px;margin-bottom:10px;box-sizing: border-box;
 }
 .song-item{
   background:var(--card);padding:15px;border-radius:12px;
   margin-top:12px;border-left:4px solid var(--neon);
+  display: flex; justify-content: space-between; align-items: center;
 }
 
 /* Performance */
@@ -61,6 +62,7 @@ input,textarea{
   font-size:28px;line-height:2.3;
   padding:50vh 20px 80vh;
   position:absolute;width:100%;color:white;
+  transition: transform 0.1s linear;
 }
 .focus-zone{
   position:fixed;top:50%;left:0;width:100%;height:85px;
@@ -73,7 +75,7 @@ input,textarea{
 
 .top-nav{
   position:fixed;top:10px;width:100%;display:flex;gap:6px;
-  padding:0 5px;z-index:1005;
+  padding:0 5px;z-index:1005; box-sizing: border-box;
 }
 .nav-group{flex:1;text-align:center}
 .nav-btn{
@@ -100,7 +102,7 @@ input,textarea{
   background:rgba(0,0,0,.9);
   border:2px solid var(--neon);
   padding:15px 30px;border-radius:50px;
-  display:none;font-weight:bold;
+  display:none;font-weight:bold; white-space: nowrap;
 }
 </style>
 </head>
@@ -130,106 +132,160 @@ input,textarea{
   <div class="top-nav">
     <div class="nav-group"><button id="micBtn" class="nav-btn mic-btn">MIC</button></div>
     <div class="nav-group"><button class="nav-btn btn-yellow" onclick="adjustSpeed(1.1)">SLOWER</button></div>
-    <div class="nav-group"><button class="nav-btn" onclick="triggerPause()">PAUSE</button></div>
+    <div class="nav-group"><button class="nav-btn" style="background:#fff; color:#000" onclick="triggerPause()">PAUSE</button></div>
     <div class="nav-group">
       <button class="nav-btn btn-blue" onclick="adjustSpeed(0.9)">FASTER</button>
       <div id="speedIndicator" class="speed-readout">0%</div>
     </div>
-    <div class="nav-group"><button class="nav-btn" onclick="exitSong()">EXIT</button></div>
+    <div class="nav-group"><button class="nav-btn" style="background: #ff4444" onclick="exitSong()">EXIT</button></div>
   </div>
   <div id="scroll-content"></div>
   <div id="pause-status-bar">PAUSED – RESUMING IN <span id="pause-num">10</span>s</div>
 </div>
 
 <script>
+// Use document.getElementById for hyphenated IDs
+const splash = document.getElementById("splash-screen");
+const library = document.getElementById("library-view");
+const overlay = document.getElementById("scroller-overlay");
+const content = document.getElementById("scroll-content");
+const countdownDisplay = document.getElementById("big-countdown");
+const pauseBar = document.getElementById("pause-status-bar");
+const pauseNum = document.getElementById("pause-num");
+
 let songs = JSON.parse(localStorage.getItem("fuzzy_index"))||[];
-let currentIndex=0,currentSong=null;
-let currentY=0,isPaused=true,isCounting=false;
-let speedBase=0,speedMod=0,recognition=null,micOn=false;
+let currentIndex=0, currentSong=null;
+let currentY=0, isPaused=true, isCounting=false;
+let speedBase=0, speedMod=0, recognition=null, micOn=false;
+let scrollAnim; // To track animation frame
 
 function enterApp(){
-  splash-screen.classList.add("hidden");
-  setTimeout(()=>{library-view.style.display="block"},800);
+  splash.classList.add("hidden");
+  setTimeout(()=>{ library.style.display="block" }, 800);
   renderList();
 }
 
 function renderList(){
-  songList.innerHTML=songs.map((s,i)=>`
+  document.getElementById("songList").innerHTML = songs.map((s,i)=>`
     <div class="song-item">
       <b>${s.title}</b>
-      <button onclick="playSong(${i})">PLAY</button>
+      <button class="nav-btn" style="width:60px; background:var(--neon); color:black" onclick="playSong(${i})">PLAY</button>
     </div>`).join("");
 }
 
 function saveSong(){
-  if(!songTitle.value||!songText.value)return;
-  songs.push({title:songTitle.value,length:+songLength.value||180,text:songText.value});
-  localStorage.setItem("fuzzy_index",JSON.stringify(songs));
-  songTitle.value=songText.value="";
+  const title = document.getElementById("songTitle");
+  const text = document.getElementById("songText");
+  const len = document.getElementById("songLength");
+  
+  if(!title.value || !text.value) return;
+  songs.push({title: title.value, length: +len.value || 180, text: text.value});
+  localStorage.setItem("fuzzy_index", JSON.stringify(songs));
+  title.value = text.value = len.value = "";
   renderList();
 }
 
 function playSong(i){
-  currentIndex=i; currentSong=songs[i];
-  scroll-content.innerText=currentSong.text+"\n\n--- FINISH ---";
-  scroller-overlay.style.display="block";
-  currentY=0; speedMod=0;
-  speedBase=scroll-content.scrollHeight/currentSong.length;
-  startCountdown();
+  currentIndex = i; 
+  currentSong = songs[i];
+  content.innerText = currentSong.text + "\n\n--- FINISH ---";
+  overlay.style.display = "block";
+  
+  currentY = 0; 
+  speedMod = 0;
+  document.getElementById("speedIndicator").innerText = "0%";
+  
+  // Wait for DOM update to calculate height correctly
+  setTimeout(() => {
+    speedBase = (content.scrollHeight) / (currentSong.length * 60); 
+    startCountdown();
+  }, 100);
 }
 
 function startCountdown(){
-  let c=10; isPaused=true; isCounting=true;
-  big-countdown.style.display="block"; big-countdown.innerText=c;
-  let t=setInterval(()=>{
-    c--; big-countdown.innerText=c;
-    if(c<=0){clearInterval(t);big-countdown.style.display="none";
-      isPaused=false;isCounting=false;requestAnimationFrame(scroll);}
-  },1000);
+  let c = 5; // Reduced for testing
+  isPaused = true; 
+  isCounting = true;
+  countdownDisplay.style.display = "block"; 
+  countdownDisplay.innerText = c;
+  
+  let t = setInterval(() => {
+    c--; 
+    countdownDisplay.innerText = c;
+    if(c <= 0){
+      clearInterval(t);
+      countdownDisplay.style.display = "none";
+      isPaused = false;
+      isCounting = false;
+      cancelAnimationFrame(scrollAnim); // Clear any old loops
+      scroll();
+    }
+  }, 1000);
 }
 
 function scroll(){
-  if(isPaused)return;
-  currentY+=speedBase*(1+speedMod);
-  scroll-content.style.transform=`translateY(-${currentY}px)`;
-  if(currentY<scroll-content.scrollHeight) requestAnimationFrame(scroll);
+  if(isPaused) return;
+  currentY += speedBase * (1 + speedMod);
+  content.style.transform = `translateY(-${currentY}px)`;
+  
+  if(currentY < content.scrollHeight) {
+      scrollAnim = requestAnimationFrame(scroll);
+  }
 }
 
 function triggerPause(){
-  if(isCounting)return;
-  isPaused=true; pause-status-bar.style.display="block";
-  let c=10; pause-num.innerText=c;
-  let t=setInterval(()=>{
-    c--; pause-num.innerText=c;
-    if(c<=0){clearInterval(t);pause-status-bar.style.display="none";startCountdown();}
-  },1000);
+  if(isCounting || isPaused) return;
+  isPaused = true; 
+  pauseBar.style.display = "block";
+  let c = 10; 
+  pauseNum.innerText = c;
+  
+  let t = setInterval(() => {
+    c--; 
+    pauseNum.innerText = c;
+    if(c <= 0){
+      clearInterval(t);
+      pauseBar.style.display = "none";
+      startCountdown();
+    }
+  }, 1000);
 }
 
 function adjustSpeed(f){
-  speedMod+=f<1?0.1:-0.1;
-  speedIndicator.innerText=Math.round(speedMod*100)+"%";
+  // If f is 0.9, we want it to go faster, so speedMod increases
+  if(f < 1) speedMod += 0.1;
+  else speedMod -= 0.1;
+  document.getElementById("speedIndicator").innerText = Math.round(speedMod * 100) + "%";
 }
 
 function exitSong(){
-  let next=(currentIndex+1)%songs.length;
-  playSong(next);
+  cancelAnimationFrame(scrollAnim);
+  isPaused = true;
+  overlay.style.display = "none";
 }
 
 /* MIC TOGGLE */
-micBtn.onclick=()=>{
+document.getElementById("micBtn").onclick = () => {
   if(!recognition){
-    const SR=window.webkitSpeechRecognition||window.SpeechRecognition;
-    if(!SR)return;
-    recognition=new SR(); recognition.continuous=true;
-    recognition.onresult=e=>{
-      let r=e.results[e.results.length-1][0].transcript.toLowerCase();
-      if(r.includes("pause"))triggerPause();
-      if(r.includes("resume"))isPaused=false;
+    const SR = window.webkitSpeechRecognition || window.SpeechRecognition;
+    if(!SR) { alert("Speech not supported"); return; }
+    recognition = new SR(); 
+    recognition.continuous = true;
+    recognition.onresult = e => {
+      let r = e.results[e.results.length-1][0].transcript.toLowerCase();
+      if(r.includes("pause")) triggerPause();
+      if(r.includes("resume")) {
+          if(isPaused && !isCounting) {
+              pauseBar.style.display = "none"; // Hide pause bar if active
+              startCountdown();
+          }
+      }
     };
   }
-  micOn=!micOn;
-  micBtn.classList.toggle("mic-on",micOn);
-  micOn?recognition.start():recognition.stop();
+  
+  micOn = !micOn;
+  document.getElementById("micBtn").classList.toggle("mic-on", micOn);
+  micOn ? recognition.start() : recognition.stop();
 };
 </script>
 </body>
